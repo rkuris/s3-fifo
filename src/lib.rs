@@ -3,6 +3,7 @@
 
 use std::{
     collections::VecDeque,
+    fmt::{self, Debug},
     sync::atomic::{AtomicI8, Ordering},
 };
 
@@ -41,6 +42,19 @@ pub struct S3FIFO<K, V> {
     small: VecDeque<Item<K, V>>,
     main: VecDeque<Item<K, V>>,
     ghost: VecDeque<Key<K>>,
+}
+impl<K, V> std::fmt::Debug for S3FIFO<K, V>
+where
+    K: std::fmt::Debug,
+    V: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("S3FIFO")
+            .field("small", &self.small)
+            .field("main", &self.main)
+            .field("ghost", &self.ghost)
+            .finish()
+    }
 }
 
 impl<K: PartialEq + Clone, V> S3FIFO<K, V> {
@@ -155,7 +169,7 @@ impl<K: PartialEq + Clone, V> S3FIFO<K, V> {
                 evicted = self.evict_main();
             }
             self.main.push_front(item);
-            return (&mut self.main.front_mut().unwrap().value, evicted);
+            (&mut self.main.front_mut().unwrap().value, evicted)
         } else {
             let item = Item {
                 key,
@@ -166,7 +180,7 @@ impl<K: PartialEq + Clone, V> S3FIFO<K, V> {
                 evicted = self.evict_small();
             }
             self.small.push_front(item);
-            return (&mut self.small.front_mut().unwrap().value, evicted);
+            (&mut self.small.front_mut().unwrap().value, evicted)
         }
     }
 
@@ -220,9 +234,7 @@ impl<K: PartialEq + Clone, V> S3FIFO<K, V> {
         // then the maximum number of iterations is 3 * main.len() + 1
         let mut iters = (3 * self.main.len() + 1) as isize;
         while iters > 0 {
-            let Some(item) = self.main.pop_back() else {
-                return None;
-            };
+            let item = self.main.pop_back()?;
             iters -= 1;
             let freq = item.freq.load(Ordering::Relaxed);
             if freq > 0 {
@@ -242,9 +254,35 @@ struct Item<K, V> {
     freq: AtomicI8, // not thread-safe
 }
 
+impl<K, V> Debug for Item<K, V>
+where
+    K: Debug,
+    V: Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Item")
+            .field("key", &self.key)
+            .field("value", &self.value)
+            .field("freq", &self.freq)
+            .finish()
+    }
+}
+
 struct Key<K> {
     key: K,
     freq: AtomicI8, // not thread-safe
+}
+
+impl<K> Debug for Key<K>
+where
+    K: Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Key")
+            .field("key", &self.key)
+            .field("freq", &self.freq)
+            .finish()
+    }
 }
 
 #[cfg(test)]

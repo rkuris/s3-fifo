@@ -9,12 +9,12 @@ use std::marker::PhantomData;
 /// a key from a value that is Hash.
 ///
 #[derive(Clone)]
-pub struct S3FIFOKey<V: Hash> {
+pub struct S3FIFOKey<V> {
     hash: u64,
     _phantom: PhantomData<V>,
 }
 
-impl<V: Hash> PartialEq for S3FIFOKey<V> {
+impl<V> PartialEq for S3FIFOKey<V> {
     fn eq(&self, other: &Self) -> bool {
         self.hash == other.hash
     }
@@ -36,7 +36,7 @@ impl<V: Hash> S3FIFOKey<V> {
     }
 }
 
-impl<V: Hash> std::fmt::Debug for S3FIFOKey<V> {
+impl<V> std::fmt::Debug for S3FIFOKey<V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("S3FIFOKey")
             .field("hash", &self.hash)
@@ -44,7 +44,7 @@ impl<V: Hash> std::fmt::Debug for S3FIFOKey<V> {
     }
 }
 
-impl<V: Hash> Display for S3FIFOKey<V> {
+impl<V> Display for S3FIFOKey<V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:#x}", self.hash)
     }
